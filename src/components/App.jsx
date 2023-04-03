@@ -1,97 +1,36 @@
-import { Component } from 'react';
-import { nanoid } from 'nanoid';
-import ContactsList from './ContactsList/ContactsList';
-import ContactsForm from './ContactsForm/ContactsForm';
-import Filter from './Filter/Filter';
+import { lazy, Suspense } from 'react';
 
-const DEFAULT_STATE = {
-  contacts: [
-    { id: 'id-1', name: 'Eden Clements', number: '645-17-79' },
-  ],
-  filter: '',
-};
+import { Routes, Route, NavLink } from 'react-router-dom';
+import { NotFound } from './NotFound/NotFound';
 
-const LS_KEY = 'contacts';
+const Home = lazy(() => import('./Home/Home'));
+const Movies = lazy(() => import('./Movies/Movies'));
+const MovieDetails = lazy(() => import('./MovieDetails/MovieDetails'));
+const Cast = lazy(() => import('./Cast/Cast'));
+const Reviews = lazy(() => import('./Reviews/Reviews'));
 
-export default class App extends Component {
-  state = DEFAULT_STATE;
+export const App = () => {
 
-  componentDidMount() {
-    const dataFromLS = JSON.parse(localStorage.getItem(LS_KEY));
+  return (
+    <>
+      <nav >
+        <NavLink to="/" end>
+          Home
+        </NavLink>
 
-    if (dataFromLS) {
-      this.setState(() => ({
-        contacts: dataFromLS
-      }));
-    }
-  }
-
-  componentDidUpdate() {
-    this.state.contacts.length !== 0 ?
-      localStorage.setItem(LS_KEY, JSON.stringify(this.state.contacts))
-      : localStorage.removeItem(LS_KEY);
-  }
-
-  addSumbitHandler = ({ name, number }) => {
-    const contact = {
-      id: nanoid(),
-      name,
-      number,
-    };
-
-    const isHaveDublicateName = this.state.contacts.find(
-      contact => contact.name === name
-    );
-
-    if (isHaveDublicateName) {
-      alert(`${name} is already in contacts`)
-      return;
-    }
-    this.setState(({ contacts }) => ({
-      contacts: [contact, ...contacts]
-    }));
-  };
-
-  changeFilter = (e) => {
-    this.setState({ filter: e.currentTarget.value });
-  };
-
-  deleteContactHandler = (id) => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== id),
-    }));
-  };
-
-  getFiltredContacts = () => {
-    const { contacts, filter } = this.state;
-    const filtredContacts = contacts.filter(contact =>
-      contact.name.toLowerCase().includes(filter.toLowerCase())
-    );
-    return filtredContacts;
-  };
-
-  render() {
-    const { contacts, filter } = this.state;
-    const contactsCount = contacts.length;
-    const filtredContacts = this.getFiltredContacts();
-
-    return (
-      <div>
-        <h1>Phonebook</h1>
-        <ContactsForm
-          onSubmit={this.addSumbitHandler}
-        />
-        <h2>Contacts</h2>
-        <Filter
-          contactsCount={contactsCount}
-          value={filter}
-          onChange={this.changeFilter}
-        />
-        <ContactsList
-          onDeleteContact={this.deleteContactHandler}
-          contacts={filtredContacts}
-        />
-      </div>
-    )
-  }
+        <NavLink to="/movies">Movies</NavLink>
+      </nav>
+      <Suspense fallback={<p>Load page...</p>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/movies" element={<Movies />} />
+          <Route path="/movies/:movieId" element={<MovieDetails />}>
+            <Route path="cast" element={<Cast />} />
+            <Route path="reviews" element={<Reviews />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </>
+  );
 };
